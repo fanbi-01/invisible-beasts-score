@@ -1,20 +1,44 @@
 <!DOCTYPE html>
 <html lang="ja">
+
 <head>
+
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <meta
+    name="viewport"
+    content="width=device-width, initial-scale=1.0"
+  >
 
   <title>チーム得点</title>
 
-  <link rel="stylesheet" href="style.css">
+  <link
+    rel="stylesheet"
+    href="style.css"
+  >
+
+  <script
+    src="script.js"
+    defer
+  ></script>
+
 </head>
-<script src="script.js"></script>
+
+
 <body>
 
+
+  <!-- =========================
+       レポート
+       ========================= -->
+
   <div class="container">
+
     <h1>レポートの得点</h1>
 
+
     <div class="team-header">
+
       <div class="team team-dimensional">
         チーム異次元
       </div>
@@ -22,9 +46,12 @@
       <div class="team team-presence">
         チーム無気配
       </div>
+
     </div>
 
+
     <div class="score-area">
+
       <div class="score score-dimensional">
         ??? P
       </div>
@@ -32,14 +59,24 @@
       <div class="score score-presence">
         ??? P
       </div>
+
     </div>
 
   </div>
+
+
+
+  <!-- =========================
+       緊急ミッション
+       ========================= -->
 
   <div class="container">
+
     <h1>緊急ミッションの得点</h1>
 
+
     <div class="team-header">
+
       <div class="team team-dimensional">
         チーム異次元
       </div>
@@ -47,9 +84,12 @@
       <div class="team team-presence">
         チーム無気配
       </div>
+
     </div>
 
+
     <div class="score-area">
+
       <div class="score score-dimensional">
         ??? P
       </div>
@@ -57,9 +97,245 @@
       <div class="score score-presence">
         ??? P
       </div>
+
     </div>
 
   </div>
 
+
+
+  <!-- =========================
+       X
+       ========================= -->
+
+  <div class="container">
+
+    <h1>Xの得点</h1>
+
+
+    <div class="team-header">
+
+      <div class="team team-dimensional">
+        チーム異次元
+      </div>
+
+      <div class="team team-presence">
+        チーム無気配
+      </div>
+
+    </div>
+
+
+    <div class="score-area">
+
+      <div
+        class="score score-dimensional"
+        id="x-score-dimensional"
+      >
+        計算中...
+      </div>
+
+
+      <div
+        class="score score-presence"
+        id="x-score-presence"
+      >
+        計算中...
+      </div>
+
+    </div>
+
+  </div>
+
+
+
+  <!-- =========================
+       X投稿フォーム
+       ========================= -->
+
+  <div class="submit-container">
+
+    <h1>X投稿を登録</h1>
+
+
+    <p class="form-description">
+
+      大投稿祭の得点対象となるX投稿のURLを入力してください。
+
+    </p>
+
+
+
+    <label for="x-post-url">
+
+      X投稿URL
+
+    </label>
+
+
+    <input
+      id="x-post-url"
+      class="form-input"
+      type="url"
+      placeholder="https://x.com/username/status/..."
+    >
+
+
+
+    <button
+      id="x-preview-button"
+      class="form-button"
+      type="button"
+    >
+
+      投稿を確認
+
+    </button>
+
+
+
+    <!-- 投稿確認結果 -->
+
+    <div
+      id="x-post-info"
+      class="post-info hidden"
+    >
+
+      <div class="info-row">
+
+        <span>投稿者</span>
+
+        <strong id="x-author">
+          -
+        </strong>
+
+      </div>
+
+
+      <div class="info-row">
+
+        <span>チーム</span>
+
+        <strong id="x-team">
+          -
+        </strong>
+
+      </div>
+
+
+      <div class="info-row">
+
+        <span>画像</span>
+
+        <strong id="x-media">
+          -
+        </strong>
+
+      </div>
+
+
+      <div class="info-row">
+
+        <span>公式URL / YouTube</span>
+
+        <strong id="x-official-link">
+          -
+        </strong>
+
+      </div>
+
+    </div>
+
+
+
+    <!-- X埋め込み -->
+
+    <div
+      id="x-preview"
+      class="x-preview"
+    ></div>
+
+
+
+    <!-- 投稿種別 -->
+
+    <div
+      id="x-submit-area"
+      class="submit-area hidden"
+    >
+
+      <label for="x-post-type">
+
+        投稿種別
+
+      </label>
+
+
+      <select
+        id="x-post-type"
+        class="form-input"
+      >
+
+        <option value="normal">
+          通常ポスト（1P）
+        </option>
+
+        <option value="link">
+          公式サイト・YouTube URL付き（3P）
+        </option>
+
+        <option value="fanmade">
+          ファンメイド作品画像付き（10P）
+        </option>
+
+        <option value="declaration">
+          チーム所属表明（5P）
+        </option>
+
+      </select>
+
+
+
+      <p id="x-point-preview">
+
+        この投稿：1 P
+
+      </p>
+
+
+
+      <button
+        id="x-submit-button"
+        class="form-button submit-button"
+        type="button"
+      >
+
+        この投稿を送信
+
+      </button>
+
+    </div>
+
+
+
+    <p
+      id="x-message"
+      class="form-message"
+    ></p>
+
+  </div>
+
+
+
+  <!-- X埋め込み表示用 -->
+
+  <script
+    async
+    src="https://platform.x.com/widgets.js"
+    charset="utf-8"
+  ></script>
+
+
 </body>
+
 </html>

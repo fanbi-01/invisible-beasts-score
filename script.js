@@ -1089,3 +1089,871 @@ document.addEventListener(
   updateScores
 
 );
+
+/*
+ * ==========================================================
+ * X 投稿集計
+ * ==========================================================
+ */
+
+
+/*
+ * GASウェブアプリURL
+ *
+ * GASをデプロイした後、
+ * /exec で終わるURLをここに貼る
+ */
+
+const GAS_URL =
+  'https://script.google.com/macros/s/AKfycbxQrFQZwoHjmlcYOEePELYZRg5Hq_B8j8fWi5QkYObq5nmzbkYv7sbIyxoh8QkAjw5gXQ/exec';
+
+
+
+/*
+ * X投稿の得点
+ */
+
+const X_POST_POINTS = {
+
+  normal: 1,
+
+  link: 3,
+
+  fanmade: 10,
+
+  declaration: 5
+
+};
+
+
+
+/*
+ * JSONP
+ *
+ * GitHub Pages
+ * ↓
+ * Google Apps Script
+ *
+ * のCORS問題を避けるために使用
+ */
+
+function gasRequest(params) {
+
+  return new Promise(
+    (resolve, reject) => {
+
+      if (
+        !GAS_URL ||
+        GAS_URL.includes(
+          'ここにGAS'
+        )
+      ) {
+
+        reject(
+          new Error(
+            'GAS_URLが設定されていません。'
+          )
+        );
+
+        return;
+
+      }
+
+
+      const callbackName =
+        '__gas_callback_' +
+        Date.now() +
+        '_' +
+        Math.floor(
+          Math.random() * 100000
+        );
+
+
+      const script =
+        document.createElement(
+          'script'
+        );
+
+
+      /*
+       * タイムアウト
+       */
+
+      const timer =
+        setTimeout(
+          () => {
+
+            cleanup();
+
+            reject(
+              new Error(
+                '通信がタイムアウトしました。'
+              )
+            );
+
+          },
+
+          15000
+        );
+
+
+      /*
+       * 後片付け
+       */
+
+      function cleanup() {
+
+        clearTimeout(
+          timer
+        );
+
+
+        delete window[
+          callbackName
+        ];
+
+
+        if (
+          script.parentNode
+        ) {
+
+          script.remove();
+
+        }
+
+      }
+
+
+      /*
+       * GASから呼ばれる関数
+       */
+
+      window[
+        callbackName
+      ] =
+        function(data) {
+
+          cleanup();
+
+          resolve(
+            data
+          );
+
+        };
+
+
+      /*
+       * パラメータ
+       */
+
+      const query =
+        new URLSearchParams({
+
+          ...params,
+
+          callback:
+            callbackName,
+
+          nonce:
+            Date.now()
+
+        });
+
+
+      script.src =
+        GAS_URL +
+        '?' +
+        query.toString();
+
+
+      script.onerror =
+        function() {
+
+          cleanup();
+
+          reject(
+            new Error(
+              'GASとの通信に失敗しました。'
+            )
+          );
+
+        };
+
+
+      document.body.appendChild(
+        script
+      );
+
+    }
+  );
+
+}
+
+
+
+/*
+ * メッセージ表示
+ */
+
+function showXMessage(
+  text,
+  type = ''
+) {
+
+  const element =
+    document.getElementById(
+      'x-message'
+    );
+
+
+  if (!element) {
+    return;
+  }
+
+
+  element.textContent =
+    text;
+
+
+  element.className =
+    'form-message';
+
+
+  if (type) {
+
+    element.classList.add(
+      type
+    );
+
+  }
+
+}
+
+
+
+/*
+ * X投稿プレビューを初期化
+ */
+
+function clearXPreview() {
+
+  const preview =
+    document.getElementById(
+      'x-preview'
+    );
+
+
+  const info =
+    document.getElementById(
+      'x-post-info'
+    );
+
+
+  const submitArea =
+    document.getElementById(
+      'x-submit-area'
+    );
+
+
+  if (preview) {
+
+    preview.innerHTML = '';
+
+  }
+
+
+  if (info) {
+
+    info.classList.add(
+      'hidden'
+    );
+
+  }
+
+
+  if (submitArea) {
+
+    submitArea.classList.add(
+      'hidden'
+    );
+
+  }
+
+}
+
+
+
+/*
+ * X投稿を確認
+ */
+
+async function previewXPost() {
+
+  const input =
+    document.getElementById(
+      'x-post-url'
+    );
+
+
+  const button =
+    document.getElementById(
+      'x-preview-button'
+    );
+
+
+  if (!input) {
+    return;
+  }
+
+
+  const url =
+    input.value.trim();
+
+
+  if (!url) {
+
+    showXMessage(
+      'X投稿のURLを入力してください。',
+      'error'
+    );
+
+    return;
+
+  }
+
+
+  clearXPreview();
+
+
+  showXMessage(
+    '投稿を確認しています...'
+  );
+
+
+  if (button) {
+
+    button.disabled =
+      true;
+
+  }
+
+
+  try {
+
+    const result =
+      await gasRequest({
+
+        action:
+          'preview',
+
+        url:
+          url
+
+      });
+
+
+    if (
+      !result.success
+    ) {
+
+      throw new Error(
+        result.message ||
+        '投稿を確認できませんでした。'
+      );
+
+    }
+
+
+    /*
+     * 投稿者
+     */
+
+    document.getElementById(
+      'x-author'
+    ).textContent =
+      result.authorName ||
+      '不明';
+
+
+    /*
+     * チーム
+     */
+
+    document.getElementById(
+      'x-team'
+    ).textContent =
+      result.teamLabel ||
+      '判定不能';
+
+
+    /*
+     * 画像
+     */
+
+    document.getElementById(
+      'x-media'
+    ).textContent =
+      result.hasMedia
+        ?
+        'あり'
+        :
+        '自動検出なし';
+
+
+    /*
+     * 公式URL / YouTube
+     */
+
+    document.getElementById(
+      'x-official-link'
+    ).textContent =
+      result.hasOfficialLink
+        ?
+        '検出'
+        :
+        '自動検出なし';
+
+
+    /*
+     * 情報欄表示
+     */
+
+    document.getElementById(
+      'x-post-info'
+    ).classList.remove(
+      'hidden'
+    );
+
+
+    /*
+     * X投稿埋め込み
+     */
+
+    const preview =
+      document.getElementById(
+        'x-preview'
+      );
+
+
+    preview.innerHTML =
+      result.html;
+
+
+    /*
+     * X widgets.jsで
+     * 実際の投稿に変換
+     */
+
+    if (
+      window.twttr &&
+      window.twttr.widgets
+    ) {
+
+      window.twttr.widgets.load(
+        preview
+      );
+
+    }
+
+
+    /*
+     * チームタグが無ければ
+     * 登録不可
+     */
+
+    if (
+      !result.canSubmit
+    ) {
+
+      showXMessage(
+        '「#チーム異次元」または「#チーム無気配」が確認できませんでした。',
+        'error'
+      );
+
+      return;
+
+    }
+
+
+    /*
+     * 投稿フォーム表示
+     */
+
+    document.getElementById(
+      'x-submit-area'
+    ).classList.remove(
+      'hidden'
+    );
+
+
+    /*
+     * URL付き投稿らしい場合
+     * 3Pを初期選択
+     */
+
+    if (
+      result.hasOfficialLink
+    ) {
+
+      document.getElementById(
+        'x-post-type'
+      ).value =
+        'link';
+
+    }
+
+
+    updateXPointPreview();
+
+
+    showXMessage(
+      '投稿を確認できました。投稿種別を確認して送信してください。',
+      'success'
+    );
+
+  }
+  catch (error) {
+
+    console.error(
+      error
+    );
+
+
+    showXMessage(
+      error.message,
+      'error'
+    );
+
+  }
+  finally {
+
+    if (button) {
+
+      button.disabled =
+        false;
+
+    }
+
+  }
+
+}
+
+
+
+/*
+ * 選択中の得点を表示
+ */
+
+function updateXPointPreview() {
+
+  const select =
+    document.getElementById(
+      'x-post-type'
+    );
+
+
+  const display =
+    document.getElementById(
+      'x-point-preview'
+    );
+
+
+  if (
+    !select ||
+    !display
+  ) {
+
+    return;
+
+  }
+
+
+  const points =
+    X_POST_POINTS[
+      select.value
+    ];
+
+
+  display.textContent =
+    `この投稿：${points} P`;
+
+}
+
+
+
+/*
+ * 投稿をスプレッドシートへ送信
+ */
+
+async function submitXPost() {
+
+  const urlElement =
+    document.getElementById(
+      'x-post-url'
+    );
+
+
+  const typeElement =
+    document.getElementById(
+      'x-post-type'
+    );
+
+
+  const button =
+    document.getElementById(
+      'x-submit-button'
+    );
+
+
+  const url =
+    urlElement.value.trim();
+
+
+  const type =
+    typeElement.value;
+
+
+  if (!url) {
+
+    showXMessage(
+      'URLを入力してください。',
+      'error'
+    );
+
+    return;
+
+  }
+
+
+  button.disabled =
+    true;
+
+
+  showXMessage(
+    '送信しています...'
+  );
+
+
+  try {
+
+    /*
+     * GAS側でも
+     * もう一度X投稿を確認する
+     */
+
+    const result =
+      await gasRequest({
+
+        action:
+          'submit',
+
+        url:
+          url,
+
+        type:
+          type
+
+      });
+
+
+    if (
+      !result.success
+    ) {
+
+      throw new Error(
+        result.message ||
+        '送信に失敗しました。'
+      );
+
+    }
+
+
+    showXMessage(
+      `送信しました。${result.points}Pとして「未確認」で登録されました。`,
+      'success'
+    );
+
+
+    /*
+     * 承認済み得点を再取得
+     */
+
+    loadXScores();
+
+  }
+  catch (error) {
+
+    console.error(
+      error
+    );
+
+
+    showXMessage(
+      error.message,
+      'error'
+    );
+
+  }
+  finally {
+
+    button.disabled =
+      false;
+
+  }
+
+}
+
+
+
+/*
+ * 承認済みX得点を取得
+ */
+
+async function loadXScores() {
+
+  const dimensional =
+    document.getElementById(
+      'x-score-dimensional'
+    );
+
+
+  const presence =
+    document.getElementById(
+      'x-score-presence'
+    );
+
+
+  if (
+    !dimensional ||
+    !presence
+  ) {
+
+    return;
+
+  }
+
+
+  dimensional.textContent =
+    '計算中...';
+
+
+  presence.textContent =
+    '計算中...';
+
+
+  try {
+
+    const result =
+      await gasRequest({
+
+        action:
+          'scores'
+
+      });
+
+
+    if (
+      !result.success
+    ) {
+
+      throw new Error(
+        result.message
+      );
+
+    }
+
+
+    dimensional.textContent =
+      `${result.dimensional} P`;
+
+
+    presence.textContent =
+      `${result.presence} P`;
+
+  }
+  catch (error) {
+
+    console.error(
+      error
+    );
+
+
+    dimensional.textContent =
+      '取得失敗';
+
+
+    presence.textContent =
+      '取得失敗';
+
+  }
+
+}
+
+
+
+/*
+ * ボタンイベント
+ */
+
+document.addEventListener(
+  'DOMContentLoaded',
+
+  function() {
+
+    const previewButton =
+      document.getElementById(
+        'x-preview-button'
+      );
+
+
+    const submitButton =
+      document.getElementById(
+        'x-submit-button'
+      );
+
+
+    const typeSelect =
+      document.getElementById(
+        'x-post-type'
+      );
+
+
+    if (previewButton) {
+
+      previewButton.addEventListener(
+        'click',
+        previewXPost
+      );
+
+    }
+
+
+    if (submitButton) {
+
+      submitButton.addEventListener(
+        'click',
+        submitXPost
+      );
+
+    }
+
+
+    if (typeSelect) {
+
+      typeSelect.addEventListener(
+        'change',
+        updateXPointPreview
+      );
+
+    }
+
+
+    /*
+     * ページを開いた時点で
+     * 承認済みX得点を取得
+     */
+
+    loadXScores();
+
+  }
+);
