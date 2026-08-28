@@ -44,6 +44,7 @@ const X_POST_POINTS = {
   normal: 1,
   link: 3,
   fanmade: 10,
+  fanmade_link: 13,
   declaration: 5
 };
 
@@ -649,14 +650,14 @@ function updateXPointPreview() {
     }
 
     if (
-      select.value === 'link' &&
+      (select.value === 'link' || select.value === 'fanmade_link') &&
       !preview.hasOfficialLink
     ) {
       text += '（対象URLを自動確認できていません）';
     }
 
     if (
-      select.value === 'fanmade' &&
+      (select.value === 'fanmade' || select.value === 'fanmade_link') &&
       !preview.hasMedia
     ) {
       text += '（画像を自動確認できていません）';
@@ -759,8 +760,15 @@ async function previewXPost() {
       document.getElementById('x-post-type');
 
     if (typeSelect) {
-      typeSelect.value =
-        result.hasOfficialLink ? 'link' : 'normal';
+      if (result.hasOfficialLink && result.hasMedia) {
+        typeSelect.value = 'fanmade_link';
+      } else if (result.hasMedia) {
+        typeSelect.value = 'fanmade';
+      } else if (result.hasOfficialLink) {
+        typeSelect.value = 'link';
+      } else {
+        typeSelect.value = 'normal';
+      }
     }
 
     document
