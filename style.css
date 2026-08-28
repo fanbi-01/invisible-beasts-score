@@ -1,0 +1,75 @@
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  background-color: white;
+  font-family: Arial, "Noto Sans JP", sans-serif;
+}
+
+.container {
+  width: 90%;
+  max-width: 1000px;
+  height: 232px;
+  margin: 100px auto;
+  padding: 7px;
+}
+
+/* 上部のチーム名 */
+.team-header {
+  display: flex;
+  gap: 24px;
+}
+
+.team {
+  width: 50%;
+  height: 45px;
+
+  display: flex;
+  justify-content: center;
+  align-items: center;
+
+  color: white;
+  font-weight: bold;
+  font-size: 15px;
+}
+
+.team-dimensional {
+  background-color: #3d2d78;
+}
+
+.team-presence {
+  background-color: #00894e;
+}
+
+/* 下部の得点 */
+.score-area {
+  display: flex;
+  justify-content: space-between;
+  padding: 82px 24px 0;
+}
+
+.score {
+  width: 146px;
+  height: 78px;
+
+  display: flex;
+  justify-content: center;
+  align-items: center;
+
+  background-color: white;
+
+  font-size: 20px;
+  font-weight: bold;
+
+  border-radius: 4px;
+}
+
+.score-dimensional {
+  border: 3px solid #3d2d78;
+}
+
+.score-presence {
+  border: 3px solid #00894e;
+}
