@@ -9,6 +9,10 @@ const POSTS_PER_PAGE = 100;
 const EVENT_START = '2026-08-01';
 const EVENT_END = '2026-08-31';
 
+/* 第4週 緊急ミッション参加レポート */
+const FOURTH_WEEK_MISSION_TAG = '2026/8-4 緊急ミッション参加作品';
+const FOURTH_WEEK_MISSION_SCORE = 20;
+
 const GAS_URL =
   'https://script.google.com/macros/s/AKfycbxQrFQZwoHjmlcYOEePELYZRg5Hq_B8j8fWi5QkYObq5nmzbkYv7sbIyxoh8QkAjw5gXQ/exec';
 
@@ -218,7 +222,12 @@ function isEventPost(post) {
   return date >= EVENT_START && date <= EVENT_END;
 }
 
-function calculatePostScore(post, categoryMap, categoryScores) {
+function calculatePostScore(
+  post,
+  categoryMap,
+  categoryScores,
+  fourthWeekMissionTagId
+) {
   const ids = Array.isArray(post.categories)
     ? post.categories
     : [];
@@ -226,6 +235,25 @@ function calculatePostScore(post, categoryMap, categoryScores) {
   const categoryNames = ids
     .map(id => categoryMap.get(id))
     .filter(Boolean);
+
+  /*
+   * 第4週緊急ミッション参加作品は、
+   * 通常のカテゴリー得点より優先して20P。
+   */
+  const postTags = Array.isArray(post.tags)
+    ? post.tags
+    : [];
+
+  const isFourthWeekMission =
+    postTags.includes(fourthWeekMissionTagId);
+
+  if (isFourthWeekMission) {
+    return {
+      score: FOURTH_WEEK_MISSION_SCORE,
+      categoryNames,
+      isFourthWeekMission: true
+    };
+  }
 
   const scores = categoryNames
     .filter(name =>
@@ -238,17 +266,22 @@ function calculatePostScore(post, categoryMap, categoryScores) {
 
   return {
     score: scores.length > 0 ? Math.min(...scores) : 0,
-    categoryNames
+    categoryNames,
+    isFourthWeekMission: false
   };
 }
 
-async function calculateTeam(teamSetting, categoryMap) {
+async function calculateTeam(
+  teamSetting,
+  categoryMap,
+  fourthWeekMissionTagId
+) {
   const tagId = await getTagId(teamSetting.tagName);
 
   const posts = await fetchAllPages('posts', {
     tags: tagId,
     status: 'publish',
-    _fields: 'id,date,link,title,categories'
+    _fields: 'id,date,link,title,categories,tags'
   });
 
   const eventPosts = posts.filter(isEventPost);
@@ -259,7 +292,8 @@ async function calculateTeam(teamSetting, categoryMap) {
     const result = calculatePostScore(
       post,
       categoryMap,
-      teamSetting.categoryScores
+      teamSetting.categoryScores,
+      fourthWeekMissionTagId
     );
 
     totalScore += result.score;
@@ -270,6 +304,9 @@ async function calculateTeam(teamSetting, categoryMap) {
       date: post.date.slice(0, 10),
       categories: result.categoryNames.join(', '),
       score: result.score,
+      rule: result.isFourthWeekMission
+        ? '第4週緊急ミッション（20P）'
+        : '通常',
       url: post.link
     });
   }
@@ -390,11 +427,23 @@ async function updateReportScores() {
   updateTotalScores();
 
   try {
-    const categoryMap = await getCategoryMap();
+    const [categoryMap, fourthWeekMissionTagId] =
+      await Promise.all([
+        getCategoryMap(),
+        getTagId(FOURTH_WEEK_MISSION_TAG)
+      ]);
 
     const [dimensional, presence] = await Promise.all([
-      calculateTeam(TEAM_SETTINGS.dimensional, categoryMap),
-      calculateTeam(TEAM_SETTINGS.presence, categoryMap)
+      calculateTeam(
+        TEAM_SETTINGS.dimensional,
+        categoryMap,
+        fourthWeekMissionTagId
+      ),
+      calculateTeam(
+        TEAM_SETTINGS.presence,
+        categoryMap,
+        fourthWeekMissionTagId
+      )
     ]);
 
     setText(
