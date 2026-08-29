@@ -11,7 +11,7 @@ const EVENT_END = '2026-08-31';
 
 /* 第4週 緊急ミッション参加レポート */
 const FOURTH_WEEK_MISSION_TAG = '2026/8-4 緊急ミッション参加作品';
-const FOURTH_WEEK_MISSION_SCORE = 20;
+const FOURTH_WEEK_MISSION_MULTIPLIER = 2;
 
 const GAS_URL =
   'https://script.google.com/macros/s/AKfycbxQrFQZwoHjmlcYOEePELYZRg5Hq_B8j8fWi5QkYObq5nmzbkYv7sbIyxoh8QkAjw5gXQ/exec';
@@ -237,24 +237,9 @@ function calculatePostScore(
     .filter(Boolean);
 
   /*
-   * 第4週緊急ミッション参加作品は、
-   * 通常のカテゴリー得点より優先して20P。
+   * まず通常ルールで基礎点を計算する。
+   * 複数カテゴリーの場合は、従来どおり最低点。
    */
-  const postTags = Array.isArray(post.tags)
-    ? post.tags
-    : [];
-
-  const isFourthWeekMission =
-    postTags.includes(fourthWeekMissionTagId);
-
-  if (isFourthWeekMission) {
-    return {
-      score: FOURTH_WEEK_MISSION_SCORE,
-      categoryNames,
-      isFourthWeekMission: true
-    };
-  }
-
   const scores = categoryNames
     .filter(name =>
       Object.prototype.hasOwnProperty.call(
@@ -264,10 +249,37 @@ function calculatePostScore(
     )
     .map(name => categoryScores[name]);
 
+  const baseScore =
+    scores.length > 0
+      ? Math.min(...scores)
+      : 0;
+
+  /*
+   * 「2026/8-4 緊急ミッション参加作品」タグ付きは
+   * 基礎点を2倍する。
+   *
+   * 例:
+   * 10P -> 20P
+   *  5P -> 10P
+   *  3P ->  6P
+   */
+  const postTags = Array.isArray(post.tags)
+    ? post.tags
+    : [];
+
+  const isFourthWeekMission =
+    postTags.includes(fourthWeekMissionTagId);
+
+  const score =
+    isFourthWeekMission
+      ? baseScore * FOURTH_WEEK_MISSION_MULTIPLIER
+      : baseScore;
+
   return {
-    score: scores.length > 0 ? Math.min(...scores) : 0,
+    score,
+    baseScore,
     categoryNames,
-    isFourthWeekMission: false
+    isFourthWeekMission
   };
 }
 
@@ -305,7 +317,7 @@ async function calculateTeam(
       categories: result.categoryNames.join(', '),
       score: result.score,
       rule: result.isFourthWeekMission
-        ? '第4週緊急ミッション（20P）'
+        ? `第4週緊急ミッション（${result.baseScore}P × 2 = ${result.score}P）`
         : '通常',
       url: post.link
     });
